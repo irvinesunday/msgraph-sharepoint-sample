@@ -60,7 +60,8 @@ namespace msgraph_sharepoint_sample
             var list = lists.Where(l => l.DisplayName.Contains("Authors")).FirstOrDefault();
 
             //Show existing Site List in the Current Site
-            Console.WriteLine(list.DisplayName);
+            Console.WriteLine($"Display all {list.DisplayName}");
+            Console.WriteLine("***************************");
 
             //assign the global listId for use in other methods 
             _listId = list.Id;
@@ -90,6 +91,9 @@ namespace msgraph_sharepoint_sample
         {
             IDictionary<string, object> data = new Dictionary<string, object>();
 
+            Console.WriteLine("***************************");
+            Console.WriteLine("Add New Author");
+
             Console.WriteLine("Enter FirstName");
             string firstName = Console.ReadLine();
             data.Add("Title", firstName);
@@ -110,6 +114,9 @@ namespace msgraph_sharepoint_sample
         private async static void UpdateAuthor()
         {
             IDictionary<string, object> data = new Dictionary<string, object>();
+
+            Console.WriteLine("***************************");
+            Console.WriteLine("Update an Author");
 
             Console.WriteLine("Enter Id");
             string authorId = Console.ReadLine();
