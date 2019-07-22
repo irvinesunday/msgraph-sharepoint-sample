@@ -13,7 +13,7 @@ namespace msgraph_sharepoint_sample
         {
             _graphClient = GraphServiceClientProvider.GetAuthenticatedClient();
             ISiteListsCollectionPage lists = await _graphClient
-                            .Groups[groupId]
+                            //.Groups[groupId]
                             .Sites[siteId]
                             .Lists.Request().GetAsync();
             return lists;
@@ -22,7 +22,8 @@ namespace msgraph_sharepoint_sample
         public async static Task<List> GetSiteList(string groupId, string siteId, string listId)
         {
             _graphClient = GraphServiceClientProvider.GetAuthenticatedClient();
-            List list = await _graphClient.Groups[groupId]
+            List list = await _graphClient
+                            //.Groups[groupId]
                             .Sites[siteId]
                             .Lists[listId].Request().GetAsync();
             return list;
@@ -32,7 +33,7 @@ namespace msgraph_sharepoint_sample
         {
             _graphClient = GraphServiceClientProvider.GetAuthenticatedClient();
             IListItemsCollectionPage listItems = await _graphClient
-                            .Groups[groupId]
+                            //.Groups[groupId]
                             .Sites[siteId]
                             .Lists[listId]
                             .Items
@@ -54,7 +55,8 @@ namespace msgraph_sharepoint_sample
 
             try
             {
-                await _graphClient.Groups[groupid]
+                await _graphClient
+                                    //.Groups[groupid]
                                     .Sites[siteId]
                                     .Lists[listId]
                                     .Items
@@ -80,13 +82,14 @@ namespace msgraph_sharepoint_sample
 
             try
             {
-               await _graphClient.Groups[groupid]
-                               .Sites[siteId]
-                               .Lists[listId]
-                               .Items[itemId]
-                               .Fields
-                               .Request()
-                               .UpdateAsync(fieldValueSet);
+                await _graphClient
+                                //.Groups[groupid]
+                                .Sites[siteId]
+                                .Lists[listId]
+                                .Items[itemId]
+                                .Fields
+                                .Request()
+                                .UpdateAsync(fieldValueSet);
 
                 return true;
             }
@@ -95,6 +98,30 @@ namespace msgraph_sharepoint_sample
                 Console.WriteLine(ex.Message);
                 return false;
             }
-        }  
+        }
+
+
+        public async static Task<bool> DeleteListItem(string groupid, string siteId, string listId, string itemId)
+        {
+            _graphClient = GraphServiceClientProvider.GetAuthenticatedClient();
+
+            try
+            {
+                await _graphClient
+                                //.Groups[groupid]
+                                .Sites[siteId]
+                                .Lists[listId]
+                                .Items[itemId]
+                                .Request()
+                                .DeleteAsync();
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                return false;
+            }
+        }
     }
 }
