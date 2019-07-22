@@ -1,0 +1,100 @@
+﻿using Microsoft.Graph;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+
+namespace msgraph_sharepoint_sample
+{
+    public class Sites
+    {
+        private static GraphServiceClient _graphClient = null;
+
+        public async static Task<ISiteListsCollectionPage> GetSiteLists(string groupId, string siteId)
+        {
+            _graphClient = GraphServiceClientProvider.GetAuthenticatedClient();
+            ISiteListsCollectionPage lists = await _graphClient
+                            .Groups[groupId]
+                            .Sites[siteId]
+                            .Lists.Request().GetAsync();
+            return lists;
+        }
+
+        public async static Task<List> GetSiteList(string groupId, string siteId, string listId)
+        {
+            _graphClient = GraphServiceClientProvider.GetAuthenticatedClient();
+            List list = await _graphClient.Groups[groupId]
+                            .Sites[siteId]
+                            .Lists[listId].Request().GetAsync();
+            return list;
+        }
+
+        public async static Task<IListItemsCollectionPage> GetSiteListItems(string groupId, string siteId, string listId)
+        {
+            _graphClient = GraphServiceClientProvider.GetAuthenticatedClient();
+            IListItemsCollectionPage listItems = await _graphClient
+                            .Groups[groupId]
+                            .Sites[siteId]
+                            .Lists[listId]
+                            .Items
+                            .Request().Expand("fields")
+                            .GetAsync();
+            return listItems;
+        }
+
+        public async static Task<bool> CreateListItem(string groupid, string siteId, string listId, IDictionary<string, object> data)
+        {
+            _graphClient = GraphServiceClientProvider.GetAuthenticatedClient();
+            var listItem = new ListItem
+            {
+                Fields = new FieldValueSet
+                {
+                    AdditionalData = data,
+                }
+            };
+
+            try
+            {
+                await _graphClient.Groups[groupid]
+                                    .Sites[siteId]
+                                    .Lists[listId]
+                                    .Items
+                               .Request()
+                               .AddAsync(listItem);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                return false;
+            }
+        }
+
+        public async static Task<bool> UpdateListItem(string groupid, string siteId, string listId, string itemId, IDictionary<string, object> data)
+        {
+            _graphClient = GraphServiceClientProvider.GetAuthenticatedClient();
+
+            var fieldValueSet = new FieldValueSet
+            {
+                AdditionalData = data,
+            };
+
+            try
+            {
+               await _graphClient.Groups[groupid]
+                               .Sites[siteId]
+                               .Lists[listId]
+                               .Items[itemId]
+                               .Fields
+                               .Request()
+                               .UpdateAsync(fieldValueSet);
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                return false;
+            }
+        }  
+    }
+}
