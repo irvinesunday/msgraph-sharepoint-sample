@@ -113,22 +113,21 @@ namespace msgraph_sharepoint_sample
 
             //Getting listItems using msgraph
             IListItemsCollectionPage listItems = await GetListItems(list.Id);
+            List<OfficeBooks> officeBooks = new List<OfficeBooks>();
 
             foreach (var item in listItems)
             {
-                IDictionary<string, object> columns = item.Fields.AdditionalData;
+                IDictionary<string, object> booksList = item.Fields.AdditionalData;
 
-                if (columns != null)
-                {
-                    string[] filterColumns = new string[] { "Title" };
-                    foreach (var col in columns)
-                    {
-                        if (filterColumns.Contains(col.Key))
-                        {
-                            Console.WriteLine($"Id: {item.Id} Field: {col.Key} Value: {col.Value}");
-                        }
-                    }
-                }
+                var jsonString = JsonConvert.SerializeObject(booksList);
+                var officeBook = JsonConvert.DeserializeObject<OfficeBooks>(jsonString);
+
+                officeBooks.Add(officeBook);
+            }
+
+            foreach (var book in officeBooks)
+            {
+                Console.WriteLine(book.Title + " : " + book.BookId);
             }
         }
 
