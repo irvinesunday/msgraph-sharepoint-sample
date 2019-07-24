@@ -1,4 +1,5 @@
 ﻿using Microsoft.Graph;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,10 +12,14 @@ namespace msgraph_sharepoint_sample
         private readonly static string _groupId = "30ecd9bc-6e8b-4280-adbc-18dccc0815a6";
         private readonly static string _siteId = "m365b267815.sharepoint.com,6e1261a1-6d03-432a-95c0-e1c7705aef5f,f43d258c-ece0-476a-a1c0-018d359817d5";
         private static string _listId = null;
+        private static ISiteListsCollectionPage lists;
+        private static List<OfficeBook> officeBooks = new List<OfficeBook>();
 
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
+            lists = await GetList();
             MenuSelection();
+
         }
 
         #region Menu
@@ -96,7 +101,6 @@ namespace msgraph_sharepoint_sample
 
         private async static void GetBooks()
         {
-            ISiteListsCollectionPage lists = await GetList();
 
             /* We will show existing site list 
              * and filter the Books List for use 
@@ -113,14 +117,14 @@ namespace msgraph_sharepoint_sample
 
             //Getting listItems using msgraph
             IListItemsCollectionPage listItems = await GetListItems(list.Id);
-            List<OfficeBooks> officeBooks = new List<OfficeBooks>();
 
             foreach (var item in listItems)
             {
                 IDictionary<string, object> booksList = item.Fields.AdditionalData;
 
                 var jsonString = JsonConvert.SerializeObject(booksList);
-                var officeBook = JsonConvert.DeserializeObject<OfficeBooks>(jsonString);
+                var officeBook = JsonConvert.DeserializeObject<OfficeBook>(jsonString);
+                officeBook.SharePointItemId = item.Id;
 
                 officeBooks.Add(officeBook);
             }
@@ -133,6 +137,8 @@ namespace msgraph_sharepoint_sample
 
         private async static void AddBook()
         {
+            var list = lists.Where(b => b.DisplayName.Contains("Books")).FirstOrDefault();
+
             IDictionary<string, object> data = new Dictionary<string, object>();
 
             Console.WriteLine("***************************");
@@ -163,6 +169,8 @@ namespace msgraph_sharepoint_sample
             Console.WriteLine("Enter Title");
             string title = Console.ReadLine();
             data.Add("Title", title);
+
+            var officeBookItems = await GetListItems(_listId); 
 
             bool result = await Sites.UpdateListItem(_groupId, _siteId, _listId, listItemId, data);
 
