@@ -1,4 +1,6 @@
 ﻿using Microsoft.Graph;
+using msgraph_sharepoint_sample.Models;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,10 +13,14 @@ namespace msgraph_sharepoint_sample
         private readonly static string _groupId = "30ecd9bc-6e8b-4280-adbc-18dccc0815a6";
         private readonly static string _siteId = "m365b267815.sharepoint.com,6e1261a1-6d03-432a-95c0-e1c7705aef5f,f43d258c-ece0-476a-a1c0-018d359817d5";
         private static string _listId = null;
-
-        static void Main(string[] args)
+        private static ISiteListsCollectionPage lists;
+        private static List<OfficeBook> officeBooks = new List<OfficeBook>();
+        private static string sharePointItemId = null;
+        static async Task Main(string[] args)
         {
+            lists = await GetList();
             MenuSelection();
+
         }
 
         #region Menu
@@ -43,11 +49,11 @@ namespace msgraph_sharepoint_sample
                         /*
                          * Update Book ListItem
                         */
-                        UpdateBook();
+                        UpdateBook(sharePointItemId);
                         break;
                     case "4":
                         //delete Book ListItem
-                        DeleteBook();
+                        DeleteBook(sharePointItemId);
                         break;
                     case "5":
                         //Exit Menu
@@ -94,45 +100,56 @@ namespace msgraph_sharepoint_sample
             return listItems;
         }
 
-        private async static void GetBooks()
+        private async static Task LoadBooks()
         {
-            ISiteListsCollectionPage lists = await GetList();
+            // Clear list 
+            officeBooks.Clear();
 
-            /* We will show existing site list 
-             * and filter the Books List for use 
-             * in this sample  
-             */
             var list = lists.Where(b => b.DisplayName.Contains("Books")).FirstOrDefault();
-
-            //Show existing Site List in the Current Site
-            Console.WriteLine($"Display all {list.DisplayName}");
-            Console.WriteLine("***************************");
 
             //assign the global listId for use in other methods 
             _listId = list.Id;
 
             //Getting listItems using msgraph
             IListItemsCollectionPage listItems = await GetListItems(list.Id);
-            List<OfficeBooks> officeBooks = new List<OfficeBooks>();
 
             foreach (var item in listItems)
             {
                 IDictionary<string, object> booksList = item.Fields.AdditionalData;
 
                 var jsonString = JsonConvert.SerializeObject(booksList);
-                var officeBook = JsonConvert.DeserializeObject<OfficeBooks>(jsonString);
+                var officeBook = JsonConvert.DeserializeObject<OfficeBook>(jsonString);
+                officeBook.SharePointItemId = item.Id;
 
                 officeBooks.Add(officeBook);
             }
+        }
+
+        private async static void GetBooks()
+        {
+
+            /* We will show existing site list 
+             * and filter the Books List for use 
+             * in this sample  
+             */
+
+            // Load books first
+            await LoadBooks();
+
+            //Show existing Site List in the Current Site
+            Console.WriteLine($"Display all Office Books");
+            Console.WriteLine("***************************");                       
 
             foreach (var book in officeBooks)
             {
-                Console.WriteLine(book.Title + " : " + book.BookId);
+                Console.WriteLine("(" + book.SharePointItemId +") "+ book.Title + " : " + book.BookId);
             }
         }
 
         private async static void AddBook()
         {
+            var list = lists.Where(b => b.DisplayName.Contains("Books")).FirstOrDefault();
+
             IDictionary<string, object> data = new Dictionary<string, object>();
 
             Console.WriteLine("***************************");
@@ -140,52 +157,74 @@ namespace msgraph_sharepoint_sample
 
             Console.WriteLine("Enter Title");
             string title = Console.ReadLine();
-            data.Add("Title", title);
+            var officeBookItem = new OfficeBook();
+            officeBookItem.Title = title;
+            officeBookItem.BookId = Guid.NewGuid();
 
-            bool result = await Sites.CreateListItem(_groupId, _siteId, _listId, data);
+            var jsonString = JsonConvert.SerializeObject(officeBookItem);
+            data = JsonConvert.DeserializeObject<Dictionary<string, object>>(jsonString);
 
+            bool result = await Sites.CreateListItem(_groupId, _siteId, list.Id, data);
             if (result)
+            {
                 Console.WriteLine("Item Created");
+                await LoadBooks();
+            }                
             else
                 Console.WriteLine("Item Not Created");
         }
 
-        private async static void UpdateBook()
+        private async static void UpdateBook(string sharePointItemId)
         {
             IDictionary<string, object> data = new Dictionary<string, object>();
 
             Console.WriteLine("***************************");
-            Console.WriteLine("Update a Book Title");
+            Console.WriteLine("Update Book");
+            Console.WriteLine("***************************");
+            Console.WriteLine("Enter ID");
 
-            Console.WriteLine("Enter Id");
-            string listItemId = Console.ReadLine();
+            sharePointItemId = Console.ReadLine();
+            string listItemId = sharePointItemId;
+
+            var officeBookItem = officeBooks.Where(b => b.SharePointItemId.Contains(sharePointItemId)).FirstOrDefault();
+
 
             Console.WriteLine("Enter Title");
             string title = Console.ReadLine();
-            data.Add("Title", title);
+
+            officeBookItem.Title = title;
+
+            var jsonString = JsonConvert.SerializeObject(officeBookItem);
+            data = JsonConvert.DeserializeObject<Dictionary<string, object>>(jsonString);
 
             bool result = await Sites.UpdateListItem(_groupId, _siteId, _listId, listItemId, data);
 
             if (result)
+            {
                 Console.WriteLine("Item Updated");
+                await LoadBooks();
+            }                
             else
                 Console.WriteLine("Item Not Update");
         }
 
-        private async static void DeleteBook()
+        private async static void DeleteBook(string id)
         {
-            IDictionary<string, object> data = new Dictionary<string, object>();
+            Console.WriteLine("Enter ID");
 
-            Console.WriteLine("***************************");
-            Console.WriteLine("Delete a book record");
+            sharePointItemId = Console.ReadLine();
 
-            Console.WriteLine("Enter Id");
-            string listItemId = Console.ReadLine();
+            string listItemId = sharePointItemId;
 
+            var officeBookItem = officeBooks.Where(b => b.SharePointItemId.Contains(sharePointItemId)).FirstOrDefault();
+            
             bool result = await Sites.DeleteListItem(_groupId, _siteId, _listId, listItemId);
 
             if (result)
+            {
                 Console.WriteLine("Item Deleted");
+                await LoadBooks();
+            }               
             else
                 Console.WriteLine("Item Not Deleted");
         }

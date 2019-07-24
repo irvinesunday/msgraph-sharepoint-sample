@@ -1,14 +1,20 @@
-﻿using Nest;
+﻿
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace msgraph_sharepoint_sample
+namespace msgraph_sharepoint_sample.Models
 {
-    public class OfficeBooks
+    public class OfficeBook
     {
+        [JsonIgnore]
+        public string SharePointItemId { get; set; }
+
+        [JsonProperty(PropertyName = "BookID")]
+
         public Guid BookId { get; set; }
 
         public string Title { get; set; }
