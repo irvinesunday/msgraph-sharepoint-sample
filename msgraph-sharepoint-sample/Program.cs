@@ -1,4 +1,5 @@
 ﻿using Microsoft.Graph;
+using msgraph_sharepoint_sample.Models;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -14,7 +15,7 @@ namespace msgraph_sharepoint_sample
         private static string _listId = null;
         private static ISiteListsCollectionPage lists;
         private static List<OfficeBook> officeBooks = new List<OfficeBook>();
-
+        private static string sharePointItemId = null;
         static async Task Main(string[] args)
         {
             lists = await GetList();
@@ -48,11 +49,11 @@ namespace msgraph_sharepoint_sample
                         /*
                          * Update Book ListItem
                         */
-                        UpdateBook();
+                        UpdateBook(sharePointItemId);
                         break;
                     case "4":
                         //delete Book ListItem
-                        DeleteBook();
+                        DeleteBook(sharePointItemId);
                         break;
                     case "5":
                         //Exit Menu
@@ -146,31 +147,42 @@ namespace msgraph_sharepoint_sample
 
             Console.WriteLine("Enter Title");
             string title = Console.ReadLine();
-            data.Add("Title", title);
+            var officeBookItem = new OfficeBook();
+            officeBookItem.Title = title;
+            officeBookItem.BookId = Guid.NewGuid();
 
-            bool result = await Sites.CreateListItem(_groupId, _siteId, _listId, data);
+            var jsonString = JsonConvert.SerializeObject(officeBookItem);
+            data = JsonConvert.DeserializeObject<Dictionary<string, object>>(jsonString);
 
+            bool result = await Sites.CreateListItem(_groupId, _siteId, list.Id, data);
             if (result)
                 Console.WriteLine("Item Created");
             else
                 Console.WriteLine("Item Not Created");
         }
 
-        private async static void UpdateBook()
+        private async static void UpdateBook(string sharePointItemId)
         {
             IDictionary<string, object> data = new Dictionary<string, object>();
 
             Console.WriteLine("***************************");
-            Console.WriteLine("Update a Book Title");
+            Console.WriteLine("Update Book");
+            Console.WriteLine("***************************");
+            Console.WriteLine("Enter ID");
 
-            Console.WriteLine("Enter Id");
-            string listItemId = Console.ReadLine();
+            sharePointItemId = Console.ReadLine();
+            string listItemId = sharePointItemId;
+
+            var officeBookItem = officeBooks.Where(b => b.SharePointItemId.Contains(sharePointItemId)).FirstOrDefault();
+
 
             Console.WriteLine("Enter Title");
             string title = Console.ReadLine();
-            data.Add("Title", title);
 
-            var officeBookItems = await GetListItems(_listId); 
+            officeBookItem.Title = title;
+
+            var jsonString = JsonConvert.SerializeObject(officeBookItem);
+            data = JsonConvert.DeserializeObject<Dictionary<string, object>>(jsonString);
 
             bool result = await Sites.UpdateListItem(_groupId, _siteId, _listId, listItemId, data);
 
@@ -180,16 +192,16 @@ namespace msgraph_sharepoint_sample
                 Console.WriteLine("Item Not Update");
         }
 
-        private async static void DeleteBook()
+        private async static void DeleteBook(string id)
         {
-            IDictionary<string, object> data = new Dictionary<string, object>();
+            Console.WriteLine("Enter ID");
 
-            Console.WriteLine("***************************");
-            Console.WriteLine("Delete a book record");
+            sharePointItemId = Console.ReadLine();
 
-            Console.WriteLine("Enter Id");
-            string listItemId = Console.ReadLine();
+            string listItemId = sharePointItemId;
 
+            var officeBookItem = officeBooks.Where(b => b.SharePointItemId.Contains(sharePointItemId)).FirstOrDefault();
+            
             bool result = await Sites.DeleteListItem(_groupId, _siteId, _listId, listItemId);
 
             if (result)

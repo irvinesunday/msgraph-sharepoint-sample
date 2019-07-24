@@ -97,7 +97,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="GraphServiceClientProvider.cs" />
-    <Compile Include="OfficeBooks.cs" />
+    <Compile Include="Models\OfficeBook.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Sites.cs" />
