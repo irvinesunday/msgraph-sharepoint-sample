@@ -100,18 +100,12 @@ namespace msgraph_sharepoint_sample
             return listItems;
         }
 
-        private async static void GetBooks()
+        private async static Task LoadBooks()
         {
+            // Clear list 
+            officeBooks.Clear();
 
-            /* We will show existing site list 
-             * and filter the Books List for use 
-             * in this sample  
-             */
             var list = lists.Where(b => b.DisplayName.Contains("Books")).FirstOrDefault();
-
-            //Show existing Site List in the Current Site
-            Console.WriteLine($"Display all {list.DisplayName}");
-            Console.WriteLine("***************************");
 
             //assign the global listId for use in other methods 
             _listId = list.Id;
@@ -129,10 +123,26 @@ namespace msgraph_sharepoint_sample
 
                 officeBooks.Add(officeBook);
             }
+        }
+
+        private async static void GetBooks()
+        {
+
+            /* We will show existing site list 
+             * and filter the Books List for use 
+             * in this sample  
+             */
+
+            // Load books first
+            await LoadBooks();
+
+            //Show existing Site List in the Current Site
+            Console.WriteLine($"Display all Office Books");
+            Console.WriteLine("***************************");                       
 
             foreach (var book in officeBooks)
             {
-                Console.WriteLine(book.Title + " : " + book.BookId);
+                Console.WriteLine("(" + book.SharePointItemId +") "+ book.Title + " : " + book.BookId);
             }
         }
 
@@ -156,7 +166,10 @@ namespace msgraph_sharepoint_sample
 
             bool result = await Sites.CreateListItem(_groupId, _siteId, list.Id, data);
             if (result)
+            {
                 Console.WriteLine("Item Created");
+                await LoadBooks();
+            }                
             else
                 Console.WriteLine("Item Not Created");
         }
@@ -187,7 +200,10 @@ namespace msgraph_sharepoint_sample
             bool result = await Sites.UpdateListItem(_groupId, _siteId, _listId, listItemId, data);
 
             if (result)
+            {
                 Console.WriteLine("Item Updated");
+                await LoadBooks();
+            }                
             else
                 Console.WriteLine("Item Not Update");
         }
@@ -205,7 +221,10 @@ namespace msgraph_sharepoint_sample
             bool result = await Sites.DeleteListItem(_groupId, _siteId, _listId, listItemId);
 
             if (result)
+            {
                 Console.WriteLine("Item Deleted");
+                await LoadBooks();
+            }               
             else
                 Console.WriteLine("Item Not Deleted");
         }
