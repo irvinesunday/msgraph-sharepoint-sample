@@ -15,10 +15,27 @@ namespace msgraph_sharepoint_sample
         private static string _listId = null;
         private static ISiteListsCollectionPage lists;
         private static List<OfficeBook> officeBooks = new List<OfficeBook>();
+        private static List<Member> _members = new List<Member>();
         private static string sharePointItemId = null;
+        private static GraphServiceClient _graphClient = null;
+        private static User user = new User();
         static async Task Main(string[] args)
         {
+            // Get an authenticated client
+            _graphClient = GraphServiceClientProvider.GetAuthenticatedClient();
+
+            // Get the logged-in user
+            user = _graphClient.Me.Request().GetAsync().Result;            
+
+            // Get all the SharePoint Lists
             lists = await GetList();
+
+            // Get the list of members from SharePoint
+            await LoadMembers();
+
+            // Add the logged-in user to the SharePoint Lists (if they don't exist)
+            await AddLoggedInUser();
+
             MenuSelection();
 
         }
@@ -70,6 +87,8 @@ namespace msgraph_sharepoint_sample
         private static string drawMenu()
         {
             Console.Clear();
+            Console.WriteLine("User: " + user.GivenName + " " + user.Surname);
+            Console.WriteLine("Email: " + user.Mail + "\n\n");
             Console.WriteLine("*****************************");
             Console.WriteLine("\tBooks Menu");
             Console.WriteLine("*****************************");
@@ -98,6 +117,82 @@ namespace msgraph_sharepoint_sample
         {
             IListItemsCollectionPage listItems = await Sites.GetSiteListItems(_groupId, _siteId, listId);
             return listItems;
+        }
+
+        private async static Task AddLoggedInUser()
+        {    
+            if(user == null)
+            {
+                user = _graphClient.Me.Request().GetAsync().Result;                
+            }
+            // Test //
+          //  var directory = _graphClient.Directory.Request().GetAsync().Result;
+
+            
+
+            // Check if the logged-in member is in list.
+            var member = _members.FirstOrDefault(m => m.MemberId.Equals(user.Id));
+
+            Member newMember = new Member();
+            if (member == null) // Add new member
+            {                
+                newMember.MemberId = Guid.Parse(user.Id);
+                newMember.FirstName = user.GivenName;
+                newMember.LastName = user.Surname;
+                newMember.Email = user.Mail;
+                newMember.IsAdmin = "False";
+            }
+            await AddMember(newMember);
+        }
+
+        private async static Task AddMember(Member newMember)
+        {
+            IDictionary<string, object> memberDictionary = new Dictionary<string, object>();
+
+            Console.WriteLine("***************************");
+            Console.WriteLine("Adding new member...");
+            
+            var jsonString = JsonConvert.SerializeObject(newMember);
+            memberDictionary = JsonConvert.DeserializeObject<Dictionary<string, object>>(jsonString);
+
+            bool result = await Sites.CreateListItem(_groupId, _siteId, _listId, memberDictionary);
+            if (result)
+            {
+                Console.WriteLine("Member added");
+                Console.WriteLine("***************************\n\n");
+
+                await LoadMembers();                
+            }
+            else
+            {
+                Console.WriteLine("Failed to add new member");
+                Console.WriteLine("***************************\n\n");
+            }                
+        }
+        private async static Task LoadMembers()
+        {
+            // Clear list
+            _members.Clear();
+
+            var list = lists.Where(b => b.DisplayName.Contains("Members")).FirstOrDefault();
+
+            //assign the global listId for use in other methods 
+            _listId = list.Id;
+
+            //Getting listItems using msgraph
+            IListItemsCollectionPage listItems = await GetListItems(list.Id);
+
+            foreach (var item in listItems)
+            {
+                IDictionary<string, object> memberList = item.Fields.AdditionalData;
+
+                var jsonString = JsonConvert.SerializeObject(memberList);
+                var member = JsonConvert.DeserializeObject<Member>(jsonString);
+                member.SharePointItemId = item.Id;
+
+                _members.Add(member);
+            }
+
         }
 
         private async static Task LoadBooks()
