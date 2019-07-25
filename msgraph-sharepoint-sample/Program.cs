@@ -15,18 +15,25 @@ namespace msgraph_sharepoint_sample
         private static string _listId = null;
         private static ISiteListsCollectionPage lists;
         private static List<OfficeBook> officeBooks = new List<OfficeBook>();
+        private static List<OfficeItem> officeItems = new List<OfficeItem>();
+        private static object officeBook = new OfficeBook();
+        private static object officeItem = new OfficeItem();
         private static string sharePointItemId = null;
+        private static List list;
+
         static async Task Main(string[] args)
         {
             lists = await GetList();
+            await LoadResources(officeItem);
+            await LoadResources(officeBook);
             MenuSelection();
-
         }
 
         #region Menu
         private static void MenuSelection()
         {
             string menuSelection;
+            string selectedList;
             do
             {
                 menuSelection = drawMenu();
@@ -37,25 +44,68 @@ namespace msgraph_sharepoint_sample
                         /* 
                          * Display all Books list items
                          */
-                        GetBooks();
+                        Console.WriteLine("Select List");
+
+                        Console.WriteLine("\t\t(a) Office Book");
+                        Console.WriteLine("\t\t(b) Office Item");
+                        selectedList = Console.ReadLine();
+
+                        if (selectedList == "a")
+                        {
+                            GetResources(officeBook);
+
+                        }
+                        else if (selectedList == "b")
+                        {
+                            GetResources(officeItem);
+                        }
+
                         break;
                     case "2":
                         /*
                          * Add Book ListItem
                         */
-                        AddBook();
+                        Console.WriteLine("Select List");
+
+                        Console.WriteLine("\t\t(a) Office Book");
+                        Console.WriteLine("\t\t(b) Office Item");
+                        selectedList = Console.ReadLine();
+
+                        if (selectedList == "a")
+                        {
+                            AddResource(officeBook);
+
+                        }
+                        else if (selectedList == "b")
+                        {
+                            AddResource(officeItem);
+                        }
                         break;
                     case "3":
                         /*
                          * Update Book ListItem
                         */
-                        UpdateBook(sharePointItemId);
+
+                        UpdateBook(sharePointItemId, officeBook);
+
                         break;
                     case "4":
-                        //delete Book ListItem
-                        DeleteBook(sharePointItemId);
+
+                        UpdateItem(officeItem);
+
+
                         break;
                     case "5":
+                        //delete Book ListItem
+
+                        DeleteBook(sharePointItemId, officeBook);
+
+                        break;
+                    case "6":
+                        DeleteItem(sharePointItemId, officeItem);
+
+                        break;
+                    case "7":
                         //Exit Menu
                         break;
                     default:
@@ -64,7 +114,7 @@ namespace msgraph_sharepoint_sample
                 }
 
                 Console.ReadLine();
-            } while (menuSelection != "5");
+            } while (menuSelection != "6");
         }
 
         private static string drawMenu()
@@ -74,11 +124,13 @@ namespace msgraph_sharepoint_sample
             Console.WriteLine("\tBooks Menu");
             Console.WriteLine("*****************************");
 
-            Console.WriteLine("1.\tShow Books");
-            Console.WriteLine("2.\tAdd New Book");
+            Console.WriteLine("1.\tShow Resources");
+            Console.WriteLine("2.\tAdd New Resource");
             Console.WriteLine("3.\tUpdate Book");
-            Console.WriteLine("4.\tDelete Book");
-            Console.WriteLine("5.\tExit");
+            Console.WriteLine("4.\tUpdate Item");
+            Console.WriteLine("5.\tDelete Book");
+            Console.WriteLine("6.\tDelete Item");
+            Console.WriteLine("7.\tExit");
             Console.WriteLine("*****************************\n");
 
             Console.WriteLine("Please select the menu option");
@@ -100,32 +152,53 @@ namespace msgraph_sharepoint_sample
             return listItems;
         }
 
-        private async static Task LoadBooks()
+        private async static Task LoadResources(object obj)
         {
             // Clear list 
-            officeBooks.Clear();
+            if (obj.GetType() == typeof(OfficeBook))
+            {
+                officeBooks.Clear();
 
-            var list = lists.Where(b => b.DisplayName.Contains("Books")).FirstOrDefault();
+                list = lists.Where(b => b.DisplayName.Contains("Books")).FirstOrDefault();
 
-            //assign the global listId for use in other methods 
-            _listId = list.Id;
+                //assign the global listId for use in other methods 
+                _listId = list.Id;
+            }
+            else if (obj.GetType() == typeof(OfficeItem))
+            {
+                officeItems.Clear();
+
+                list = lists.Where(b => b.DisplayName.Contains("Items")).FirstOrDefault();
+
+                //assign the global listId for use in other methods 
+                _listId = list.Id;
+            }
 
             //Getting listItems using msgraph
-            IListItemsCollectionPage listItems = await GetListItems(list.Id);
+            IListItemsCollectionPage listItems = await GetListItems(_listId);
 
             foreach (var item in listItems)
             {
-                IDictionary<string, object> booksList = item.Fields.AdditionalData;
+                IDictionary<string, object> resourceList = item.Fields.AdditionalData;
+                var jsonString = JsonConvert.SerializeObject(resourceList);
 
-                var jsonString = JsonConvert.SerializeObject(booksList);
-                var officeBook = JsonConvert.DeserializeObject<OfficeBook>(jsonString);
-                officeBook.SharePointItemId = item.Id;
-
-                officeBooks.Add(officeBook);
+                if (obj.GetType() == typeof(OfficeBook))
+                {
+                    var officeResource = JsonConvert.DeserializeObject<OfficeBook>(jsonString);
+                    officeResource.SharePointItemId = item.Id;
+                    officeBooks.Add(officeResource);
+                }
+                else if (obj.GetType() == typeof(OfficeItem))
+                {
+                    var officeResource = JsonConvert.DeserializeObject<OfficeItem>(jsonString);
+                    officeResource.SharePointItemId = item.Id;
+                    officeItems.Add(officeResource);
+                }
             }
         }
 
-        private async static void GetBooks()
+
+        private async static void GetResources(object obj)
         {
 
             /* We will show existing site list 
@@ -134,47 +207,85 @@ namespace msgraph_sharepoint_sample
              */
 
             // Load books first
-            await LoadBooks();
+            await LoadResources(obj);
 
             //Show existing Site List in the Current Site
             Console.WriteLine($"Display all Office Books");
-            Console.WriteLine("***************************");                       
+            Console.WriteLine("***************************");
 
-            foreach (var book in officeBooks)
+            if (obj.GetType() == typeof(OfficeBook))
             {
-                Console.WriteLine("(" + book.SharePointItemId +") "+ book.Title + " : " + book.BookId);
+                foreach (var book in officeBooks)
+                {
+                    Console.WriteLine("(" + book.SharePointItemId + ") " + book.Title + " : " + book.BookId);
+                }
+            }
+            else if (obj.GetType() == typeof(OfficeItem))
+            {
+                foreach (var officeItem in officeItems)
+                {
+                    Console.WriteLine("(" + officeItem.SharePointItemId + ") " + officeItem.Title + officeItem.ItemId);
+
+                }
             }
         }
 
-        private async static void AddBook()
+        private async static void AddResource(object obj)
         {
-            var list = lists.Where(b => b.DisplayName.Contains("Books")).FirstOrDefault();
-
             IDictionary<string, object> data = new Dictionary<string, object>();
 
-            Console.WriteLine("***************************");
-            Console.WriteLine("Add New Book");
+            string jsonString;
+            if (obj.GetType() == typeof(OfficeBook))
+            {
+                list = lists.Where(b => b.DisplayName.Contains("Books")).FirstOrDefault();
+                _listId = list.Id;
 
-            Console.WriteLine("Enter Title");
-            string title = Console.ReadLine();
-            var officeBookItem = new OfficeBook();
-            officeBookItem.Title = title;
-            officeBookItem.BookId = Guid.NewGuid();
+                Console.WriteLine("***************************");
+                Console.WriteLine($"Add New {list.DisplayName}");
 
-            var jsonString = JsonConvert.SerializeObject(officeBookItem);
-            data = JsonConvert.DeserializeObject<Dictionary<string, object>>(jsonString);
+                Console.WriteLine("Enter Title");
+                string title = Console.ReadLine();
 
-            bool result = await Sites.CreateListItem(_groupId, _siteId, list.Id, data);
+                var officeBookItem = new OfficeBook();
+                officeBookItem.Title = title;
+                officeBookItem.BookId = Guid.NewGuid();
+
+                jsonString = JsonConvert.SerializeObject(officeBookItem);
+                data = JsonConvert.DeserializeObject<Dictionary<string, object>>(jsonString);
+
+            }
+            else if (obj.GetType() == typeof(OfficeItem))
+            {
+                list = lists.Where(b => b.DisplayName.Contains("Items")).FirstOrDefault();
+                _listId = list.Id;
+
+                Console.WriteLine($"Add New {list.DisplayName}");
+
+
+                Console.WriteLine("Enter Title");
+                string title = Console.ReadLine();
+
+                var officeItem = new OfficeItem();
+                officeItem.Title = title;
+                officeItem.ItemId = Guid.NewGuid();
+
+                jsonString = JsonConvert.SerializeObject(officeItem);
+                data = JsonConvert.DeserializeObject<Dictionary<string, object>>(jsonString);
+
+            }
+
+            bool result = await Sites.CreateListItem(_groupId, _siteId, _listId, data);
             if (result)
             {
                 Console.WriteLine("Item Created");
-                await LoadBooks();
-            }                
+                await LoadResources(obj);
+            }
             else
                 Console.WriteLine("Item Not Created");
         }
 
-        private async static void UpdateBook(string sharePointItemId)
+        private async static void UpdateBook(string sharePointItemId, object obj)
+
         {
             IDictionary<string, object> data = new Dictionary<string, object>();
 
@@ -184,10 +295,10 @@ namespace msgraph_sharepoint_sample
             Console.WriteLine("Enter ID");
 
             sharePointItemId = Console.ReadLine();
+
             string listItemId = sharePointItemId;
 
-            var officeBookItem = officeBooks.Where(b => b.SharePointItemId.Contains(sharePointItemId)).FirstOrDefault();
-
+            var officeBookItem = officeBooks.Where(b => b.SharePointItemId.Equals(sharePointItemId)).FirstOrDefault();
 
             Console.WriteLine("Enter Title");
             string title = Console.ReadLine();
@@ -198,17 +309,49 @@ namespace msgraph_sharepoint_sample
             data = JsonConvert.DeserializeObject<Dictionary<string, object>>(jsonString);
 
             bool result = await Sites.UpdateListItem(_groupId, _siteId, _listId, listItemId, data);
-
             if (result)
             {
                 Console.WriteLine("Item Updated");
-                await LoadBooks();
-            }                
+                await LoadResources(obj);
+            }
             else
                 Console.WriteLine("Item Not Update");
         }
 
-        private async static void DeleteBook(string id)
+        private async static void UpdateItem(object obj)
+        {
+          //  await LoadResources(obj);
+            IDictionary<string, object> data = new Dictionary<string, object>();
+
+            Console.WriteLine("***************************");
+            Console.WriteLine("Update Item");
+            Console.WriteLine("***************************");
+
+            Console.WriteLine("Enter ID");
+            string listItemId = Console.ReadLine();
+
+            var officeItem = officeItems.Where(b => b.SharePointItemId.Equals(listItemId)).FirstOrDefault();
+
+            Console.WriteLine("Enter Title");
+            string title = Console.ReadLine();
+
+            officeItem.Title = title;
+
+            var jsonString = JsonConvert.SerializeObject(officeItem);
+            data = JsonConvert.DeserializeObject<Dictionary<string, object>>(jsonString);
+
+            bool result = await Sites.UpdateListItem(_groupId, _siteId, _listId, listItemId, data);
+            if (result)
+            {
+                Console.WriteLine("Item Updated");
+                await LoadResources(obj);
+            }
+            else
+                Console.WriteLine("Item Not Update");
+        }
+
+        //deletes office book in sharepoint Office Book List
+        private async static void DeleteBook(string sharePointItemId, object obj)
         {
             Console.WriteLine("Enter ID");
 
@@ -217,14 +360,56 @@ namespace msgraph_sharepoint_sample
             string listItemId = sharePointItemId;
 
             var officeBookItem = officeBooks.Where(b => b.SharePointItemId.Contains(sharePointItemId)).FirstOrDefault();
-            
+
             bool result = await Sites.DeleteListItem(_groupId, _siteId, _listId, listItemId);
 
             if (result)
             {
                 Console.WriteLine("Item Deleted");
-                await LoadBooks();
-            }               
+                await LoadResources(obj);
+            }
+            else
+                Console.WriteLine("Item Not Deleted");
+        }
+
+        //deletes office item in sharepoint Office Item list
+        private async static void DeleteItem(string sharePointItemId, object obj)
+        {
+            Console.WriteLine("Enter ID");
+
+            sharePointItemId = Console.ReadLine();
+
+            string listItemId = sharePointItemId;
+
+            var officeItem = officeItems.Where(b => b.SharePointItemId.Contains(sharePointItemId)).FirstOrDefault();
+
+            bool result = await Sites.DeleteListItem(_groupId, _siteId, _listId, listItemId);
+
+            if (result)
+            {
+                Console.WriteLine("Item Deleted");
+                await LoadResources(obj);
+            }
+            else
+                Console.WriteLine("Item Not Deleted");
+        }
+
+
+        private async static void DeleteResource(string sharePointItemId, object obj)
+        {
+            Console.WriteLine("Enter ID");
+
+            sharePointItemId = Console.ReadLine();
+
+            string listItemId = sharePointItemId;
+
+            bool result = await Sites.DeleteListItem(_groupId, _siteId, _listId, listItemId);
+
+            if (result)
+            {
+                Console.WriteLine("Item Deleted");
+                await LoadResources(obj);
+            }
             else
                 Console.WriteLine("Item Not Deleted");
         }
