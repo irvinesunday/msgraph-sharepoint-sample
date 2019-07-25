@@ -247,7 +247,6 @@ namespace msgraph_sharepoint_sample
 
         }
 
-        private async static Task LoadBooks()
         private async static Task LoadResources(object obj)
         {
             // Clear list 
@@ -292,7 +291,6 @@ namespace msgraph_sharepoint_sample
                 }
             }
         }
-
 
         private async static void GetResources(object obj)
         {
