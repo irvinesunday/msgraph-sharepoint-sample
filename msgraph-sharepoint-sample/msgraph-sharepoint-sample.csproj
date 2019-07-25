@@ -98,6 +98,7 @@
   <ItemGroup>
     <Compile Include="GraphServiceClientProvider.cs" />
     <Compile Include="Models\BorrowedResource.cs" />
+    <Compile Include="Models\Member.cs" />
     <Compile Include="Models\OfficeBook.cs" />
     <Compile Include="Models\OfficeItem.cs" />
     <Compile Include="Program.cs" />
