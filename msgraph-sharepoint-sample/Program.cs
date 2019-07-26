@@ -14,9 +14,9 @@ namespace msgraph_sharepoint_sample
         private readonly static string _siteId = "m365b267815.sharepoint.com,6e1261a1-6d03-432a-95c0-e1c7705aef5f,f43d258c-ece0-476a-a1c0-018d359817d5";
         private static string _listId = null;
         private static ISiteListsCollectionPage lists;
-        private static List<OfficeBook> officeBooks = new List<OfficeBook>();
+        private static List<OfficeBook> _officeBooks = new List<OfficeBook>();
         private static List<Member> _members = new List<Member>();
-        private static List<OfficeItem> officeItems = new List<OfficeItem>();
+        private static List<OfficeItem> _officeItems = new List<OfficeItem>();
         private static object officeBook = new OfficeBook();
         private static object officeItem = new OfficeItem();
         private static string sharePointItemId = null;
@@ -252,22 +252,25 @@ namespace msgraph_sharepoint_sample
             // Clear list 
             if (obj.GetType() == typeof(OfficeBook))
             {
-                officeBooks.Clear();
+                _officeBooks.Clear();
 
                 list = lists.Where(b => b.DisplayName.Contains("Books")).FirstOrDefault();
-
-                //assign the global listId for use in other methods 
-                _listId = list.Id;
             }
             else if (obj.GetType() == typeof(OfficeItem))
             {
-                officeItems.Clear();
+                _officeItems.Clear();
 
-                list = lists.Where(b => b.DisplayName.Contains("Items")).FirstOrDefault();
-
-                //assign the global listId for use in other methods 
-                _listId = list.Id;
+                list = lists.Where(b => b.DisplayName.Contains("Items")).FirstOrDefault();               
             }
+            else if(obj.GetType() == typeof(Member))
+            {
+                _members.Clear();
+
+                list = lists.Where(b => b.DisplayName.Contains("Members")).FirstOrDefault();
+            }
+
+            //assign the global listId for use in other methods 
+            _listId = list.Id;
 
             //Getting listItems using msgraph
             IListItemsCollectionPage listItems = await GetListItems(_listId);
@@ -281,13 +284,13 @@ namespace msgraph_sharepoint_sample
                 {
                     var officeResource = JsonConvert.DeserializeObject<OfficeBook>(jsonString);
                     officeResource.SharePointItemId = item.Id;
-                    officeBooks.Add(officeResource);
+                    _officeBooks.Add(officeResource);
                 }
                 else if (obj.GetType() == typeof(OfficeItem))
                 {
                     var officeResource = JsonConvert.DeserializeObject<OfficeItem>(jsonString);
                     officeResource.SharePointItemId = item.Id;
-                    officeItems.Add(officeResource);
+                    _officeItems.Add(officeResource);
                 }
             }
         }
@@ -309,14 +312,14 @@ namespace msgraph_sharepoint_sample
 
             if (obj.GetType() == typeof(OfficeBook))
             {
-                foreach (var book in officeBooks)
+                foreach (var book in _officeBooks)
                 {
                     Console.WriteLine("(" + book.SharePointItemId + ") " + book.Title + " : " + book.BookId);
                 }
             }
             else if (obj.GetType() == typeof(OfficeItem))
             {
-                foreach (var officeItem in officeItems)
+                foreach (var officeItem in _officeItems)
                 {
                     Console.WriteLine("(" + officeItem.SharePointItemId + ") " + officeItem.Title + officeItem.ItemId);
 
@@ -392,7 +395,7 @@ namespace msgraph_sharepoint_sample
 
             string listItemId = sharePointItemId;
 
-            var officeBookItem = officeBooks.Where(b => b.SharePointItemId.Equals(sharePointItemId)).FirstOrDefault();
+            var officeBookItem = _officeBooks.Where(b => b.SharePointItemId.Equals(sharePointItemId)).FirstOrDefault();
 
             Console.WriteLine("Enter Title");
             string title = Console.ReadLine();
@@ -424,7 +427,7 @@ namespace msgraph_sharepoint_sample
             Console.WriteLine("Enter ID");
             string listItemId = Console.ReadLine();
 
-            var officeItem = officeItems.Where(b => b.SharePointItemId.Equals(listItemId)).FirstOrDefault();
+            var officeItem = _officeItems.Where(b => b.SharePointItemId.Equals(listItemId)).FirstOrDefault();
 
             Console.WriteLine("Enter Title");
             string title = Console.ReadLine();
@@ -453,7 +456,7 @@ namespace msgraph_sharepoint_sample
 
             string listItemId = sharePointItemId;
 
-            var officeBookItem = officeBooks.Where(b => b.SharePointItemId.Contains(sharePointItemId)).FirstOrDefault();
+            var officeBookItem = _officeBooks.Where(b => b.SharePointItemId.Contains(sharePointItemId)).FirstOrDefault();
 
             bool result = await Sites.DeleteListItem(_groupId, _siteId, _listId, listItemId);
 
@@ -475,7 +478,7 @@ namespace msgraph_sharepoint_sample
 
             string listItemId = sharePointItemId;
 
-            var officeItem = officeItems.Where(b => b.SharePointItemId.Contains(sharePointItemId)).FirstOrDefault();
+            var officeItem = _officeItems.Where(b => b.SharePointItemId.Contains(sharePointItemId)).FirstOrDefault();
 
             bool result = await Sites.DeleteListItem(_groupId, _siteId, _listId, listItemId);
 
