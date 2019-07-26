@@ -15,7 +15,8 @@ namespace msgraph_sharepoint_sample
             ISiteListsCollectionPage lists = await _graphClient
                             //.Groups[groupId]
                             .Sites[siteId]
-                            .Lists.Request().GetAsync();
+                            .Lists.Request().GetAsync();          
+           
             return lists;
         }
 
