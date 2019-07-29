@@ -9,32 +9,29 @@ namespace msgraph_sharepoint_sample
     {
         private static GraphServiceClient _graphClient = null;
 
-        public async static Task<ISiteListsCollectionPage> GetSiteLists(string groupId, string siteId)
+        public async static Task<ISiteListsCollectionPage> GetSiteLists(string siteId)
         {
             _graphClient = GraphServiceClientProvider.GetAuthenticatedClient();
             ISiteListsCollectionPage lists = await _graphClient
-                            //.Groups[groupId]
                             .Sites[siteId]
                             .Lists.Request().GetAsync();          
            
             return lists;
         }
 
-        public async static Task<List> GetSiteList(string groupId, string siteId, string listId)
+        public async static Task<List> GetSiteList(string siteId, string listId)
         {
             _graphClient = GraphServiceClientProvider.GetAuthenticatedClient();
             List list = await _graphClient
-                            //.Groups[groupId]
                             .Sites[siteId]
                             .Lists[listId].Request().GetAsync();
             return list;
         }
 
-        public async static Task<IListItemsCollectionPage> GetSiteListItems(string groupId, string siteId, string listId)
+        public async static Task<IListItemsCollectionPage> GetSiteListItems(string siteId, string listId)
         {
             _graphClient = GraphServiceClientProvider.GetAuthenticatedClient();
             IListItemsCollectionPage listItems = await _graphClient
-                            //.Groups[groupId]
                             .Sites[siteId]
                             .Lists[listId]
                             .Items
@@ -43,7 +40,7 @@ namespace msgraph_sharepoint_sample
             return listItems;
         }
 
-        public async static Task<bool> CreateListItem(string groupid, string siteId, string listId, IDictionary<string, object> data)
+        public async static Task<bool> CreateListItem(string siteId, string listId, IDictionary<string, object> data)
         {
             _graphClient = GraphServiceClientProvider.GetAuthenticatedClient();
             var listItem = new ListItem
@@ -57,10 +54,9 @@ namespace msgraph_sharepoint_sample
             try
             {
                 await _graphClient
-                                    //.Groups[groupid]
-                                    .Sites[siteId]
-                                    .Lists[listId]
-                                    .Items
+                               .Sites[siteId]
+                               .Lists[listId]
+                               .Items
                                .Request()
                                .AddAsync(listItem);
                 return true;
@@ -72,7 +68,7 @@ namespace msgraph_sharepoint_sample
             }
         }
 
-        public async static Task<bool> UpdateListItem(string groupid, string siteId, string listId, string itemId, IDictionary<string, object> data)
+        public async static Task<bool> UpdateListItem(string siteId, string listId, string itemId, IDictionary<string, object> data)
         {
             _graphClient = GraphServiceClientProvider.GetAuthenticatedClient();
 
@@ -84,7 +80,6 @@ namespace msgraph_sharepoint_sample
             try
             {
                 await _graphClient
-                                //.Groups[groupid]
                                 .Sites[siteId]
                                 .Lists[listId]
                                 .Items[itemId]
@@ -102,14 +97,13 @@ namespace msgraph_sharepoint_sample
         }
 
 
-        public async static Task<bool> DeleteListItem(string groupid, string siteId, string listId, string itemId)
+        public async static Task<bool> DeleteListItem(string siteId, string listId, string itemId)
         {
             _graphClient = GraphServiceClientProvider.GetAuthenticatedClient();
 
             try
             {
                 await _graphClient
-                                //.Groups[groupid]
                                 .Sites[siteId]
                                 .Lists[listId]
                                 .Items[itemId]

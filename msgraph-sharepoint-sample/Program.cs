@@ -11,7 +11,6 @@ namespace msgraph_sharepoint_sample
 {
     public class Program
     {
-        private readonly static string _groupId = "30ecd9bc-6e8b-4280-adbc-18dccc0815a6";
         private readonly static string _siteId = "m365b267815.sharepoint.com,6e1261a1-6d03-432a-95c0-e1c7705aef5f,f43d258c-ece0-476a-a1c0-018d359817d5";
         private static string _listId = null;
 
@@ -182,18 +181,31 @@ namespace msgraph_sharepoint_sample
         }
         #endregion
 
+        /// <summary>
+        /// Gets all the Lists defined in the SharePoint Site
+        /// </summary>
+        /// <returns></returns>
         private async static Task<ISiteListsCollectionPage> GetList()
         {
-            ISiteListsCollectionPage lists = await Sites.GetSiteLists(_groupId, _siteId);
+            ISiteListsCollectionPage lists = await Sites.GetSiteLists(_siteId);
             return lists;
         }
 
+        /// <summary>
+        /// Gets all the items in a provided SharePoint List
+        /// </summary>
+        /// <param name="listId"></param>
+        /// <returns></returns>
         private async static Task<IListItemsCollectionPage> GetListItems(string listId)
         {
-            IListItemsCollectionPage listItems = await Sites.GetSiteListItems(_groupId, _siteId, listId);
+            IListItemsCollectionPage listItems = await Sites.GetSiteListItems(_siteId, listId);
             return listItems;
         }
 
+        /// <summary>
+        /// Adds the logged-in user to the list of Members in SharePoint
+        /// </summary>
+        /// <returns></returns>
         private async static Task AddLoggedInUser()
         {    
             if(user == null)
@@ -217,6 +229,11 @@ namespace msgraph_sharepoint_sample
             }            
         }
 
+        /// <summary>
+        /// Adds a new member entry to the SharePoint Members List
+        /// </summary>
+        /// <param name="newMember">An instance of a Member class</param>
+        /// <returns></returns>
         private async static Task AddMember(Member newMember)
         {
             IDictionary<string, object> memberDictionary = new Dictionary<string, object>();
@@ -229,7 +246,7 @@ namespace msgraph_sharepoint_sample
             var jsonString = JsonConvert.SerializeObject(newMember);
             memberDictionary = JsonConvert.DeserializeObject<Dictionary<string, object>>(jsonString);
 
-            bool result = await Sites.CreateListItem(_groupId, _siteId, _listId, memberDictionary);
+            bool result = await Sites.CreateListItem(_siteId, _listId, memberDictionary);
             if (result)
             {
                 newMemberMessage.Append("\nMember added");
@@ -245,11 +262,11 @@ namespace msgraph_sharepoint_sample
 
             _consoleMessage.Append(newMemberMessage);
         }
-        
+
         /// <summary>
-        /// Retrieves list items from SharePoint
+        /// Retrieves a list of items from a SharePoint List
         /// </summary>
-        /// <param name="obj">The object instance of the corresponding list to be retrieved</param>
+        /// <param name="obj">An instance of a class representing the SharePoint List</param>
         /// <returns></returns>
         private async static Task RetrieveListItemsFromSharePoint(object obj)
         {
@@ -305,14 +322,19 @@ namespace msgraph_sharepoint_sample
             }
         }
 
-        private async static void DisplayListItems(object obj)
+        /// <summary>
+        /// Displays a list of items belonging to a SharePoint List
+        /// </summary>
+        /// <param name="obj">An instance of a class representing the SharePoint List</param>
+        /// <returns></returns>
+        private async static Task DisplayListItems(object obj)
         {            
             // Retrieve the respective list items
             await RetrieveListItemsFromSharePoint(obj);                      
 
             if (obj.GetType() == typeof(OfficeBook))
             {
-                Console.WriteLine($"Display all Office Books");
+                Console.WriteLine($"\nDisplay all Office Books");
                 Console.WriteLine("***************************");
                 foreach (var book in _officeBooks)
                 {                    
@@ -321,7 +343,7 @@ namespace msgraph_sharepoint_sample
             }
             else if (obj.GetType() == typeof(OfficeItem))
             {
-                Console.WriteLine($"Display all Office Items");
+                Console.WriteLine($"\nDisplay all Office Items");
                 Console.WriteLine("***************************");
                 foreach (var officeItem in _officeItems)
                 {                    
@@ -330,7 +352,7 @@ namespace msgraph_sharepoint_sample
             }
             else if (obj.GetType() == typeof(Member))
             {
-                Console.WriteLine($"Display all Members");
+                Console.WriteLine($"\nDisplay all Members");
                 Console.WriteLine("***************************");
                 foreach (var member in _members)
                 {                    
@@ -339,6 +361,10 @@ namespace msgraph_sharepoint_sample
             }
         }
 
+        /// <summary>
+        /// Adds an entry to a SharePoint List
+        /// </summary>
+        /// <param name="obj">An instance of a class representing the SharePoint List</param>
         private async static void AddListItem(object obj)
         {
             IDictionary<string, object> data = new Dictionary<string, object>();
@@ -381,7 +407,7 @@ namespace msgraph_sharepoint_sample
                 data = JsonConvert.DeserializeObject<Dictionary<string, object>>(jsonString);
             }
             
-            bool result = await Sites.CreateListItem(_groupId, _siteId, _listId, data);
+            bool result = await Sites.CreateListItem(_siteId, _listId, data);
             if (result)
             {
                 Console.WriteLine("Item Created");
@@ -393,10 +419,12 @@ namespace msgraph_sharepoint_sample
             }                
         }
 
+        /// <summary>
+        /// Updates an office item in SharePoint Office Item List
+        /// </summary>
+        /// <param name="officeBook">An instance of <see cref="OfficeBook"/></param>
         private async static void UpdateOfficeBook(OfficeBook officeBook)
         {
-            IDictionary<string, object> data = new Dictionary<string, object>();
-
             Console.WriteLine("***************************");
             Console.WriteLine("Update Office Book Details");
             Console.WriteLine("***************************");
@@ -416,23 +444,33 @@ namespace msgraph_sharepoint_sample
 
             Console.WriteLine("Enter Title");
             string title = Console.ReadLine();
+
+            if(String.IsNullOrEmpty(title))
+            {
+                Console.WriteLine("Title cannot be empty.");
+                return;
+            }
             
             officeBookItem.Title = title;
-
-
+            
             var jsonString = JsonConvert.SerializeObject(officeBookItem);
-            data = JsonConvert.DeserializeObject<Dictionary<string, object>>(jsonString);
+            IDictionary<string, object> officeBookData = new Dictionary<string, object>();
+            officeBookData = JsonConvert.DeserializeObject<Dictionary<string, object>>(jsonString);
 
-            bool result = await Sites.UpdateListItem(_groupId, _siteId, _listId, listItemId, data);
+            bool result = await Sites.UpdateListItem(_siteId, _listId, listItemId, officeBookData);
             if (result)
             {
-                Console.WriteLine("Book Successfully Updated");
+                Console.WriteLine("\nBook Successfully Updated!");
                 await RetrieveListItemsFromSharePoint(officeBook);
             }
             else
-                Console.WriteLine("Book Not Updated");
+                Console.WriteLine("\nBook Not Updated");
         }
 
+        /// <summary>
+        /// Updates an office item in SharePoint Office Item List
+        /// </summary>
+        /// <param name="officeItem">An instance of <see cref="OfficeItem"/></param>
         private async static void UpdateOfficeItem(OfficeItem officeItem)
         {
           //  await LoadResources(obj);
@@ -455,24 +493,33 @@ namespace msgraph_sharepoint_sample
             string listItemId = userListItemId;
 
             Console.WriteLine("Enter Title");
-            string title = Console.ReadLine();                  
+            string title = Console.ReadLine();
+
+            if (String.IsNullOrEmpty(title))
+            {
+                Console.WriteLine("Title cannot be empty.");
+                return;
+            }
 
             item.Title = title;
 
             var jsonString = JsonConvert.SerializeObject(item);
             data = JsonConvert.DeserializeObject<Dictionary<string, object>>(jsonString);
 
-            bool result = await Sites.UpdateListItem(_groupId, _siteId, _listId, listItemId, data);
+            bool result = await Sites.UpdateListItem(_siteId, _listId, listItemId, data);
             if (result)
             {
-                Console.WriteLine("Item Successfully Updated");
+                Console.WriteLine("\nItem Successfully Updated!");
                 await RetrieveListItemsFromSharePoint(officeItem);
             }
             else
-                Console.WriteLine("Item Not Update");
+                Console.WriteLine("\nItem Not Updated");
         }
 
-        //deletes office book in sharepoint Office Book List
+        /// <summary>
+        /// Deletes an office book in SharePoint Office Book List
+        /// </summary>
+        /// <param name="officeBook">An instance of <see cref="OfficeBook"/></param>
         private async static void DeleteOfficeBook(OfficeBook officeBook)
         {
             Console.WriteLine("***************************");
@@ -492,18 +539,21 @@ namespace msgraph_sharepoint_sample
 
             string listItemId = userItemId;
 
-            bool result = await Sites.DeleteListItem(_groupId, _siteId, _listId, listItemId);
+            bool result = await Sites.DeleteListItem(_siteId, _listId, listItemId);
 
             if (result)
             {
-                Console.WriteLine("Book Successfully Deleted");
+                Console.WriteLine("\nBook Successfully Deleted!");
                 await RetrieveListItemsFromSharePoint(officeBook);
             }
             else
                 Console.WriteLine("Book Not Deleted");
         }
 
-        //deletes office item in sharepoint Office Item list
+        /// <summary>
+        /// Deletes an office item in SharePoint Office Item list
+        /// </summary>
+        /// <param name="officeItem">An instance of <see cref="OfficeItem"/></param>
         private async static void DeleteOfficeItem(OfficeItem officeItem)
         {
             Console.WriteLine("***************************");
@@ -522,17 +572,15 @@ namespace msgraph_sharepoint_sample
 
             string listItemId = userItemId;
 
-            bool result = await Sites.DeleteListItem(_groupId, _siteId, _listId, listItemId);
+            bool result = await Sites.DeleteListItem(_siteId, _listId, listItemId);
 
             if (result)
             {
-                Console.WriteLine("Office Item Successfully Deleted");
+                Console.WriteLine("\nOffice Item Successfully Deleted!");
                 await RetrieveListItemsFromSharePoint(officeItem);
             }
             else
-                Console.WriteLine("Office Item Not Deleted");
-        }
-
-        
+                Console.WriteLine("\nOffice Item Not Deleted");
+        }        
     }
 }
